@@ -1,0 +1,104 @@
+- hosts: all
+  become: yes
+  tasks:
+
+    - name: Install ALL dependencies for Docker and Jenkins
+      package:
+        name: "{{ item }}"
+        state: latest
+      with_items:
+        - git
+        - texlive-latex
+        - wget
+        - deltarpm
+        - yum-utils
+        - java-1.8.0-openjdk
+        - device-mapper-persistent-data
+        - gcc
+        - make
+        - openssl-devel
+        - initscripts
+        - python-requests
+        - cronie
+
+    - name: Add Docker repo
+      get_url:
+        url: https://download.docker.com/linux/centos/docker-ce.repo
+        dest: /etc/yum.repos.d/docer-ce.repo
+
+    - name: Install Docker
+      package:
+        name: docker-ce
+        state: latest
+
+    - name: Start Docker service
+      service:
+        name: docker
+        state: started
+        enabled: yes
+      become: yes
+
+    - name: Add user vagrant to docker group
+      user:
+        name: vagrant
+        groups: docker
+        append: yes
+      become: yes
+
+    - name: Install Epel
+      yum: name=epel-release state=present
+
+    - name: Install pip
+      yum: name=python-pip state=present
+
+    - name: install docker-py
+      pip: name=docker-py
+
+    - name: Creates directory
+      file:  path=/usr/src/app state=directory
+
+
+    - name: build the image
+      docker_image: 
+        build:
+          path: /vagrant/ansible/files/master
+        name: jenkins
+        tag: jm1
+        source: build
+
+    - name: run the master in a docker container
+      docker_container:
+        name: master
+        image: "jenkins:jm1"
+        state: started
+        network_mode: bridge
+        exposed_ports:
+        - "8080"
+        - "5000"
+        published_ports:
+        - "8080:8080"
+        - "50000:50000"
+        volumes:
+        - "/var/run/docker.sock:/var/run/docker.sock"
+        - "/vagrant/ansible/files:/var/jenkins_home/files"
+
+#    - name: build the jenkins slave image
+#      docker_image:
+#        build:
+#          path: /vagrant/ansible/files/slave
+#        name: jslave
+#        tag: js1
+#        source: build
+#
+#    - name: run the slave in a docker container
+#      docker_container:
+#        name: slave
+#        image: "jslave:js1"
+#        state: started
+#        network_mode: bridge
+#        exposed_ports:
+#        - "8080"
+#        - "5000"
+#        published_ports:
+#        - "8081:8080"
+#        - "50001:50000"

@@ -1,0 +1,10 @@
+workflow-aggregator:latest
+blueocean:latest
+configuration-as-code-support:latest
+job-dsl:latest
+docker-build-step:latest
+git:latest
+mstest:latest
+matrix-auth:latest
+docker-workflow:latest
+credentials-binding:latest
